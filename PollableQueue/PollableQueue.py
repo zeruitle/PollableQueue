@@ -1,0 +1,64 @@
+import os
+import queue
+import socket
+
+
+"""
+Special thanks to   https://wax8280.github.io/2016/09/29/666/
+And                 http://python3-cookbook-personal.readthedocs.io/zh_CN/latest/c12/p13_polling_multiple_thread_queues.html
+"""
+
+__author__ = 'zeruitle'
+
+
+class PollableQueue(queue.Queue):
+    # 定义一种新的Queue，底层有一对互联的socket
+    # Create a pair of connected sockets
+    def __init__(self):
+        super().__init__()
+        self.continue_flag = True
+        if os.name == 'posix':
+            self._putsocket, self._getsocket = socket.socketpair()
+        else:
+            # non-POSIX 系统
+            # non-POSIX system
+            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server.bind(('127.0.0.1', 0))
+            server.listen(1)
+            # 创建一个服务器socket，之后立刻创建客户端socket并连接到服务器上
+            # create a sever socket，then create a client socket and connect to server
+            self._putsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._putsocket.connect(server.getsockname())
+            self._getsocket, _ = server.accept()
+            server.close()
+
+    def fileno(self):
+        # 返回套接字的文件描述符
+        # return fileno of socket
+        return self._getsocket.fileno()
+
+    def put(self, item):
+        super().put(item)
+        self._putsocket.send(b'x')
+
+    def get(self):
+        self._getsocket.recv(1)
+        return super().get()
+
+    def empty(self):
+        return super().empty()
+
+    def end(self, fin):
+        # 使用自定义字符通知消费者终止，在close()前使用
+        # use customized string to notify consumer thread to terminate, call before close()
+        self.continue_flag = False
+        self.put(fin)
+
+    def continuum(self):
+        # 获取线程终止标志
+        # get consumer thread continue flag
+        return self.continue_flag
+
+    def close(self):
+        self._putsocket.close()
+        self._getsocket.close()
