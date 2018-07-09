@@ -14,7 +14,7 @@ __author__ = 'zeruitle'
 class PollableQueue(queue.Queue):
     # 定义一种新的Queue，底层有一对互联的socket
     # Create a pair of connected sockets
-    def __init__(self):
+    def __init__(self, backlog=None):
         super().__init__()
         self.continue_flag = True
         if os.name == 'posix':
@@ -23,8 +23,16 @@ class PollableQueue(queue.Queue):
             # non-POSIX 系统
             # non-POSIX system
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            #Open a localhost, port = 0 means avaliable random port number from 1024 to 65535
+            #建立一个localhost的服务，port=0 参数表示从1024到65535中随机选择一个可用端口使用
             server.bind(('127.0.0.1', 0))
-            server.listen(1)
+            print('listening on port:', server.getsockname()[1])
+            #Since Python3.5 backlog changed to optional
+            #Python3.5后，listen的参数backlog变为可选
+            if backlog is None:
+                server.listen()
+            else:
+                server.listen(backlog)
             # 创建一个服务器socket，之后立刻创建客户端socket并连接到服务器上
             # create a sever socket，then create a client socket and connect to server
             self._putsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
