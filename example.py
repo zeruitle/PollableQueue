@@ -2,6 +2,7 @@ import PollableQueue.PollableQueue as PollableQueue
 import select
 import threading
 import time
+import random
 
 
 def writeThread(pollqueues, fin):
@@ -38,11 +39,19 @@ def writeThread(pollqueues, fin):
             pass
 
 
+def producer(pollqueue):
+    while True:
+        pollqueue.put('{} {}'.format(threading.get_ident(),time.ctime()))
+        time.sleep(random.randint(0,3))
+
+
 if __name__ == "__main__":
     #customized signal to break from block
     fin = 'Fin'
 
+    #use 1 random port
     pollqueue1 = PollableQueue.PollableQueue()
+    #use 1 random port
     pollqueue2 = PollableQueue.PollableQueue()
 
     try:
@@ -53,9 +62,12 @@ if __name__ == "__main__":
         """
         now feed data to pollqueue, you can use thread to produce your data
         """
-        pollqueue1.put('poll1+1')
-        pollqueue2.put('poll2+2')
-        pollqueue1.put('poll1+3')
+        t2 = threading.Thread(name='producer thread', target=producer, args=(pollqueue1,))
+        t3 = threading.Thread(name='producer thread', target=producer, args=(pollqueue2,))
+        t2.start()
+        t3.start()
+        t2.join()
+        t3.join()
 
         # wait for result queue empty
         empty = False
