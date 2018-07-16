@@ -42,7 +42,7 @@ def writeThread(pollqueues, fin):
 def producer(pollqueue):
     while True:
         pollqueue.put('{} {}'.format(threading.get_ident(),time.ctime()))
-        time.sleep(random.randint(0,3))
+        time.sleep(random.randint(3,10))
 
 
 if __name__ == "__main__":
@@ -54,20 +54,23 @@ if __name__ == "__main__":
     #use 1 random port
     pollqueue2 = PollableQueue.PollableQueue()
 
+    pollqueues = [pollqueue1,pollqueue2]
+
     try:
         #start write thread first
-        t = threading.Thread(name='write thread', target=writeThread, args=([pollqueue1,pollqueue2],fin,))
-        t.start()
+        write = threading.Thread(name='write thread', target=writeThread, args=([pollqueue1,pollqueue2],fin,))
+        write.start()
 
         """
         now feed data to pollqueue, you can use thread to produce your data
         """
-        t2 = threading.Thread(name='producer thread', target=producer, args=(pollqueue1,))
-        t3 = threading.Thread(name='producer thread', target=producer, args=(pollqueue2,))
-        t2.start()
-        t3.start()
-        t2.join()
-        t3.join()
+        threads = []
+        for i in range(5):
+            threads.append(threading.Thread(name='producer thread', target=producer, args=(pollqueues[random.randint(0,1)],)))
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
         # wait for result queue empty
         empty = False
@@ -82,7 +85,7 @@ if __name__ == "__main__":
 
         # wait for write thread join
         print("Waiting for write thread join")
-        t.join()
+        write.join()
         pollqueue1.close()
     except Exception as e:
         print(e)

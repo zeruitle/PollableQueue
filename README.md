@@ -1,7 +1,7 @@
 # PollableQueue
 PollableQueue implementation for python
 
-### Special thanks to
+## Special thanks to
 
 http://python3-cookbook-personal.readthedocs.io/zh_CN/latest/c12/p13_polling_multiple_thread_queues.html
 
