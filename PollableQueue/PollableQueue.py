@@ -55,7 +55,8 @@ class PollableQueue(queue.Queue):
 
     def empty(self):
         return super().empty()
-
+    
+    #TODO:: not thread safe, need better mechanism
     def end(self, fin):
         # 使用自定义字符通知消费者终止，在close()前使用
         # use customized string to notify consumer thread to terminate, call before close()
